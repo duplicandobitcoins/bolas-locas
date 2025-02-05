@@ -10,7 +10,7 @@ from fastapi.staticfiles import StaticFiles
 import os  # Importa el módulo os
 
 app = FastAPI()
-'''
+
 # Configuración de CORS
 origins = [
     "https://www.solutions-systems.com",  # Dominio permitido
@@ -24,7 +24,7 @@ app.add_middleware(
     allow_methods=["*"],                 # Métodos HTTP permitidos
     allow_headers=["*"],                 # Encabezados permitidos
 )
-'''
+
 # Obtener la ruta absoluta de la carpeta static
 current_dir = os.path.dirname(os.path.abspath(__file__))
 static_dir = os.path.join(current_dir, "bolas_locas", "static")
