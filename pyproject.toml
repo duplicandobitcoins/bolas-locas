@@ -1,0 +1,23 @@
+[tool.poetry]
+name = "bolas-locas"
+version = "0.1.0"
+description = ""
+authors = ["duplicandobitcoins <duplicandobitcoins@gmail.com>"]
+packages = [{include = "bolas_locas"}]
+
+[tool.poetry.dependencies]
+python = ">=3.12"
+#fastapi = "^0.115.7"
+uvicorn = "^0.34.0"
+mysql-connector-python = "^9.2.0"
+pydantic = "^2.10.6"
+#fastapi-cors = "^6.0.2"
+fastapi = {extras = ["all"], version = "^0.110.0"}
+
+[poetry.group.dev.dependencies]
+# Si tienes dependencias de desarrollo, las agregarías aquí. Ejemplo:
+# pytest = "^7.0"
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
