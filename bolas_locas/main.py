@@ -12,7 +12,11 @@ app = FastAPI()
 # Configurar CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://www.solutions-systems.com"],  # Asegúrate de que este es el dominio correcto
+    allow_origins=[
+        "http://localhost:5500",  # Para Live Server de VS Code
+        "http://127.0.0.1:8000",  # Si corres FastAPI localmente
+        "https://www.solutions-systems.com",  # Tu dominio en producción
+    ],  # Asegúrate de que este es el dominio correcto
     allow_credentials=True,
     allow_methods=["*"],  # Permitir todos los métodos HTTP
     allow_headers=["*"],  # Permitir todos los headers
