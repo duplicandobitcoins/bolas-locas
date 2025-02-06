@@ -793,3 +793,45 @@ def get_jugadores_tablero(tablero_id: int):
     finally:
         cursor.close()
         conn.close()
+
+##### 🟡🟡🟡 Fin Endpoint para obtener jugadores de un tablero específico
+
+
+# ✅ Endpoint para obtener los datos del jackpot de un tablero específico
+@router.get("/tablero/{id_tablero}/jackpot")
+async def obtener_jackpot_tablero(id_tablero: int):
+    """
+    Endpoint para obtener los datos del jackpot de un tablero específico.
+    """
+    try:
+        # Conectar a la base de datos
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        # Consultar los datos del jackpot para el tablero seleccionado
+        query = """
+        SELECT acum_bolitas, premio_ganador, premio_sponsor
+        FROM jackpots
+        WHERE id_tablero = %s
+        """
+        cursor.execute(query, (id_tablero,))
+        jackpot_data = cursor.fetchone()
+
+        # Cerrar la conexión
+        cursor.close()
+        conn.close()
+
+        if not jackpot_data:
+            raise HTTPException(status_code=404, detail="No se encontraron datos del jackpot para este tablero.")
+
+        # Devolver los datos del jackpot
+        return {
+            "acum_bolitas": jackpot_data["acum_bolitas"],
+            "premio_ganador": jackpot_data["premio_ganador"],
+            "premio_sponsor": jackpot_data["premio_sponsor"]
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al obtener los datos del jackpot: {str(e)}")
+
+##### 🟡🟡🟡 Fin Endpoint para obtener los datos del jackpot de un tablero específico.
