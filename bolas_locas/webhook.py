@@ -844,7 +844,7 @@ async def obtener_jackpot_tablero(id_tablero: int):
 
 ##### 🟡🟡🟡 Fin Endpoint para obtener los datos del jackpot de un tablero específico.
 
-from decimal import Decimal  # Asegúrate de importar Decimal si no lo has hecho
+from random import randint
 
 @router.post("/simular_compras")
 async def simular_compras():
