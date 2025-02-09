@@ -15,6 +15,10 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:5500",  # Para Live Server de VS Code
         "http://127.0.0.1:80",  # Si corres FastAPI localmente
+        "http://127.0.0.1:8000",  # Si corres FastAPI localmente
+        "http://127.0.0.1",  # Si corres FastAPI localmente
+        
+        
         "https://www.solutions-systems.com",  # Tu dominio en producción
     ],  # Asegúrate de que este es el dominio correcto
     allow_credentials=True,

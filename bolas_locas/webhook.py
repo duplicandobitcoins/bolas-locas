@@ -17,6 +17,9 @@ origins = [
     "http://localhost:3000",             # Para desarrollo local
     "http://localhost:5500",  # Para Live Server de VS Code
     "http://127.0.0.1:80",  # Si corres FastAPI localmente
+    "http://127.0.0.1:8000",  # Si corres FastAPI localmente
+    "http://127.0.0.1",  # Si corres FastAPI localmente
+        
         
 ]
 
