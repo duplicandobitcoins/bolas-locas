@@ -854,17 +854,35 @@ async def simular_compras():
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
         
-        # Obtener todos los jugadores registrados
+        # Paso 1: Truncar la tabla jugadores_tableros
+        print("🧹 Truncando la tabla jugadores_tableros...")
+        cursor.execute("TRUNCATE TABLE jugadores_tableros")
+        
+        # Paso 2: Reiniciar los valores del jackpot para el id_tablero 4
+        print("🔄 Reiniciando valores del jackpot para el tablero ID 4...")
+        cursor.execute(
+            """
+            UPDATE jackpots 
+            SET 
+                monto_acumulado = 0, 
+                premio_ganador = 0, 
+                premio_sponsor = 0, 
+                ganancia_bruta = 0, 
+                acum_bolitas = 0
+            WHERE id_tablero = %s
+            """,
+            (4,)
+        )
+        
+        # Confirmar los cambios realizados hasta ahora
+        conn.commit()
+        
+        # Paso 3: Obtener todos los jugadores registrados
         cursor.execute("SELECT user_id, saldo FROM jugadores")
         jugadores = cursor.fetchall()
         
         # Definir el ID del tablero
         id_tablero = 4
-        
-        # Convertir los porcentajes de float a Decimal
-        porcentaje_ganador = Decimal('0.60')
-        porcentaje_sponsor = Decimal('0.06')
-        porcentaje_casa = Decimal('0.34')
         
         # Iterar sobre cada jugador y simular la compra de bolitas
         for jugador in jugadores:
@@ -917,9 +935,9 @@ async def simular_compras():
             if jackpot:
                 # Calcular los nuevos valores para premio_ganador, premio_sponsor y ganancia_bruta
                 nuevo_monto_acumulado = jackpot["monto_acumulado"] + costo_total
-                premio_ganador = nuevo_monto_acumulado * porcentaje_ganador
-                premio_sponsor = nuevo_monto_acumulado * porcentaje_sponsor
-                ganancia_bruta = nuevo_monto_acumulado * porcentaje_casa
+                premio_ganador = nuevo_monto_acumulado * Decimal('0.60')  # 60% del monto acumulado
+                premio_sponsor = nuevo_monto_acumulado * Decimal('0.06')  # 6% del monto acumulado
+                ganancia_bruta = nuevo_monto_acumulado * Decimal('0.34')  # 34% del monto acumulado
                 
                 # Actualizar el jackpot con los nuevos valores
                 cursor.execute(
@@ -944,9 +962,9 @@ async def simular_compras():
                 )
             else:
                 # Calcular los valores iniciales para premio_ganador, premio_sponsor y ganancia_bruta
-                premio_ganador = costo_total * porcentaje_ganador
-                premio_sponsor = costo_total * porcentaje_sponsor
-                ganancia_bruta = costo_total * porcentaje_casa
+                premio_ganador = costo_total * Decimal('0.60')  # 60% del monto acumulado
+                premio_sponsor = costo_total * Decimal('0.06')  # 6% del monto acumulado
+                ganancia_bruta = costo_total * Decimal('0.34')  # 34% del monto acumulado
                 
                 # Insertar un nuevo registro en jackpots
                 cursor.execute(
