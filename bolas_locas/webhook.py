@@ -843,3 +843,97 @@ async def obtener_jackpot_tablero(id_tablero: int):
         raise HTTPException(status_code=500, detail=f"Error al obtener los datos del jackpot: {str(e)}")
 
 ##### 🟡🟡🟡 Fin Endpoint para obtener los datos del jackpot de un tablero específico.
+
+
+from random import randint
+
+@router.post("/simular_compras")
+async def simular_compras():
+    print("📢 Simulando compras masivas en el tablero ID 4...")
+    try:
+        # Conectar a la base de datos
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        # Obtener todos los jugadores registrados
+        cursor.execute("SELECT user_id, saldo FROM jugadores")
+        jugadores = cursor.fetchall()
+
+        # Definir el ID del tablero
+        id_tablero = 4
+
+        # Iterar sobre cada jugador y simular la compra de bolitas
+        for jugador in jugadores:
+            user_id = jugador["user_id"]
+            saldo_actual = jugador["saldo"]
+
+            # Consultar los detalles del tablero
+            cursor.execute("SELECT * FROM tableros WHERE id_tablero = %s", (id_tablero,))
+            tablero = cursor.fetchone()
+
+            if not tablero:
+                continue  # Saltar si el tablero no existe
+
+            # Generar una cantidad aleatoria de bolitas dentro del rango permitido
+            min_bolitas = tablero["min_bolitas_por_jugador"]
+            max_bolitas = tablero["max_bolitas_por_jugador"]
+            cantidad_bolitas = randint(min_bolitas, max_bolitas)
+
+            # Calcular el costo total
+            precio_por_bolita = tablero["precio_por_bolita"]
+            costo_total = cantidad_bolitas * precio_por_bolita
+
+            # Verificar si el jugador tiene suficiente saldo
+            if saldo_actual < costo_total:
+                print(f"⚠️ Jugador {user_id} no tiene suficiente saldo para comprar {cantidad_bolitas} bolitas.")
+                continue
+
+            # Verificar si el jugador ya alcanzó el límite máximo de bolitas en el tablero
+            cursor.execute(
+                "SELECT SUM(cantidad_bolitas) AS compradas_por_jugador FROM jugadores_tableros WHERE user_id = %s AND id_tablero = %s",
+                (user_id, id_tablero)
+            )
+            jugador_stats = cursor.fetchone()
+            bolitas_compradas_jugador = jugador_stats["compradas_por_jugador"] or 0
+            if bolitas_compradas_jugador + cantidad_bolitas > tablero["max_bolitas_por_jugador"]:
+                print(f"⚠️ Jugador {user_id} excede el límite máximo de bolitas en el tablero.")
+                continue
+
+            # Actualizar el saldo del jugador
+            cursor.execute("UPDATE jugadores SET saldo = saldo - %s WHERE user_id = %s", (costo_total, user_id))
+
+            # Registrar la compra en la tabla jugadores_tableros
+            cursor.execute(
+                "INSERT INTO jugadores_tableros (user_id, id_tablero, cantidad_bolitas, monto_pagado) VALUES (%s, %s, %s, %s)",
+                (user_id, id_tablero, cantidad_bolitas, costo_total)
+            )
+
+            # Actualizar el jackpot
+            cursor.execute("SELECT * FROM jackpots WHERE id_tablero = %s", (id_tablero,))
+            jackpot = cursor.fetchone()
+            if jackpot:
+                cursor.execute(
+                    "UPDATE jackpots SET monto_acumulado = monto_acumulado + %s, acum_bolitas = acum_bolitas + %s WHERE id_tablero = %s",
+                    (costo_total, cantidad_bolitas, id_tablero)
+                )
+            else:
+                cursor.execute(
+                    "INSERT INTO jackpots (id_tablero, acum_bolitas, monto_acumulado) VALUES (%s, %s, %s)",
+                    (id_tablero, cantidad_bolitas, costo_total)
+                )
+
+            print(f"✅ Jugador {user_id} compró {cantidad_bolitas} bolitas en el tablero {id_tablero}.")
+
+        # Confirmar los cambios en la base de datos
+        conn.commit()
+
+        # Cerrar la conexión
+        cursor.close()
+        conn.close()
+
+        return JSONResponse(content={"message": "Simulación de compras completada."})
+
+    except Exception as e:
+        print(f"❌ Error al simular compras: {e}")
+        return JSONResponse(content={"error": str(e)}, status_code=500)
+        
