@@ -816,7 +816,7 @@ async def obtener_jackpot_tablero(id_tablero: int):
 
         # Consultar los datos del jackpot para el tablero seleccionado
         query = """
-        SELECT acum_bolitas, premio_ganador, premio_sponsor
+        SELECT id_tablero, acum_bolitas, premio_ganador, premio_sponsor
         FROM jackpots
         WHERE id_tablero = %s
         """
@@ -832,6 +832,8 @@ async def obtener_jackpot_tablero(id_tablero: int):
 
         # Devolver los datos del jackpot
         return {
+            
+            "id_tablero": jackpot_data["id_tablero"],
             "acum_bolitas": jackpot_data["acum_bolitas"],
             "premio_ganador": jackpot_data["premio_ganador"],
             "premio_sponsor": jackpot_data["premio_sponsor"]
