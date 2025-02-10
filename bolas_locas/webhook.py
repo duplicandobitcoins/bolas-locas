@@ -853,6 +853,11 @@ async def simular_compras():
         # Conectar a la base de datos
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
+
+        # Paso 0: Actualizar el saldo de todos los jugadores a 500,000
+        print("💰 Actualizando saldo de todos los jugadores a 500,000...")
+        cursor.execute("UPDATE jugadores SET saldo = 500000")
+        conn.commit()  # Confirmar la actualización
         
         # Paso 1: Truncar la tabla jugadores_tableros
         print("🧹 Truncando la tabla jugadores_tableros...")
