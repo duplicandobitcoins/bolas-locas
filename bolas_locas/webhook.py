@@ -861,7 +861,8 @@ async def simular_compras():
         
         # Paso 1: Truncar la tabla jugadores_tableros
         print("🧹 Truncando la tabla jugadores_tableros...")
-        cursor.execute("TRUNCATE TABLE jugadores_tableros")
+        #cursor.execute("TRUNCATE TABLE jugadores_tableros")
+        cursor.execute("DELETE from jugadores_tableros WHERE id_tablero = %s", (4,))
         
         # Paso 2: Reiniciar los valores del jackpot para el id_tablero 4
         print("🔄 Reiniciando valores del jackpot para el tablero ID 4...")
