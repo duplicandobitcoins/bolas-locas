@@ -1127,10 +1127,12 @@ def handle_comprar_album():
     try:
         # Obtener álbumes disponibles desde el backend
         response = requests.get("https://bolas-locas-production.up.railway.app/albumes_disponibles")
+        print(f"🌐 Respuesta del servidor: {response.status_code}")  # 🔍 Depuración
         if response.status_code != 200:
             return JSONResponse(content={"fulfillmentText": "❌ No se pudieron cargar los álbumes disponibles."})
         
         albumes = response.json()
+        print(f"📚 Álbumes obtenidos: {albumes}")  # 🔍 Depuración
         if not albumes:
             return JSONResponse(content={"fulfillmentText": "📭 No hay álbumes disponibles en este momento."})
         
