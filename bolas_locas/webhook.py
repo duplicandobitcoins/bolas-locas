@@ -674,6 +674,10 @@ async def handle_dialogflow_webhook(request: Request):
     if action == "actComprarAlbum":
         return handle_comprar_album()
 
+
+    if action == "actComprarAlbumMiniApp":
+        return handle_comprar_album_miniapp(user_id)
+
     return JSONResponse(content={"fulfillmentText": "⚠️ Acción no reconocida."})
 
 # ✅ Función para manejar "MiCuenta"
@@ -1185,3 +1189,30 @@ def get_albumes_disponibles_local():
     except Exception as e:
         print(f"❌ Error en la función get_albumes_disponibles_local: {e}")
         return []
+
+    
+    # ✅ Función para manejar la acción "Comprar Álbum Mini App"
+def handle_comprar_album_miniapp(user_id):
+    print("🛒 Acción detectada: Comprar Álbum Mini App")
+
+    # URL de la Mini App (asegúrate de que coincida con tu dominio)
+    mini_app_url = "http://127.0.0.1/bolas-locas/mini-app"  # Reemplaza con la URL de tu Mini App
+
+    # Construir el mensaje con un botón para abrir la Mini App
+    return JSONResponse(content={
+        "fulfillmentMessages": [
+            {
+                "platform": "TELEGRAM",
+                "payload": {
+                    "telegram": {
+                        "text": "🛍️ *Compra un Álbum:*",
+                        "reply_markup": {
+                            "inline_keyboard": [
+                                [{"text": "👉 Abrir Mini App", "web_app": {"url": mini_app_url}}]
+                            ]
+                        }
+                    }
+                }
+            }
+        ]
+    })
