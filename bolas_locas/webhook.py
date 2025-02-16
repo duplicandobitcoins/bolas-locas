@@ -1196,7 +1196,7 @@ def handle_comprar_album_miniapp(user_id):
     print("🛒 Acción detectada: Comprar Álbum Mini App")
 
     # URL de la Mini App (asegúrate de que coincida con tu dominio)
-    mini_app_url = "http://127.0.0.1/bolas-locas/mini-app.html"  # Reemplaza con la URL de tu Mini App
+    mini_app_url = "https://solutions-systems.com/bolas_locas/mini-app.html"  # Reemplaza con la URL de tu Mini App
 
     # Construir el mensaje con un botón para abrir la Mini App
     return JSONResponse(content={
