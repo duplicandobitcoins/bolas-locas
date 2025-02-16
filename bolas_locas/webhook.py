@@ -1073,7 +1073,7 @@ async def iniciar_compra_album(data: dict):
         return JSONResponse(content={"payment_url": payment_url})
     except Exception as e:
         return JSONResponse(content={"error": f"Error al comunicarse con Bold: {str(e)}"}, status_code=500)
-
+'''
     @router.post("/callback_bold")
 async def callback_bold(data: dict):
     reference = data.get("reference")
@@ -1111,7 +1111,7 @@ async def callback_bold(data: dict):
         conn.close()
 
     return JSONResponse(content={"message": "Callback procesado correctamente."})
-
+'''
 
     if action == "actComprarAlbum":
     # Obtener álbumes disponibles
