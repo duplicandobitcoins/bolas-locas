@@ -668,6 +668,11 @@ async def handle_dialogflow_webhook(request: Request):
     if action == "actMisTabGanados":
         return handle_mis_tableros_ganados(user_id)
 
+
+        # ✅ Nueva acción para Comprar Álbum
+    if action == "actComprarAlbum":
+        return handle_comprar_album()
+
     return JSONResponse(content={"fulfillmentText": "⚠️ Acción no reconocida."})
 
 # ✅ Función para manejar "MiCuenta"
@@ -1113,38 +1118,45 @@ async def callback_bold(data: dict):
     return JSONResponse(content={"message": "Callback procesado correctamente."})
 '''
 
-    if action == "actComprarAlbum":
-    # Obtener álbumes disponibles
-    response = requests.get("https://bolas-locas-production.up.railway.app/albumes_disponibles")
-    if response.status_code != 200:
-        return JSONResponse(content={"fulfillmentText": "❌ No se pudieron cargar los álbumes disponibles."})
-    
-    albumes = response.json()
-    if not albumes:
-        return JSONResponse(content={"fulfillmentText": "📭 No hay álbumes disponibles en este momento."})
-    
-    mensaje = "📚 *Álbumes Disponibles:*\n\n"
-    botones = {"inline_keyboard": []}
-    
-    for album in albumes:
-        precio_formateado = "${:,.0f}".format(album["precio"]).replace(',', '.')
-        mensaje += f"🔹 *ID:* {album['id_album']} - {album['nombre']}\n"
-        mensaje += f"💰 Precio: {precio_formateado}\n\n"
-        botones["inline_keyboard"].append([
-            {"text": f"🛒 Comprar Álbum {album['id_album']}", "callback_data": f"C0mpr4r4lbum|{album['id_album']}"}
-        ])
-    
-    return JSONResponse(content={
-        "fulfillmentMessages": [
-            {
-                "platform": "TELEGRAM",
-                "payload": {
-                    "telegram": {
-                        "parse_mode": "Markdown",
-                        "text": mensaje,
-                        "reply_markup": botones
+# ✅ Función para manejar la acción de comprar álbum
+def handle_comprar_album():
+    print("📚 Acción detectada: Comprar Álbum")
+    try:
+        # Obtener álbumes disponibles desde el backend
+        response = requests.get("https://bolas-locas-production.up.railway.app/albumes_disponibles")
+        if response.status_code != 200:
+            return JSONResponse(content={"fulfillmentText": "❌ No se pudieron cargar los álbumes disponibles."})
+        
+        albumes = response.json()
+        if not albumes:
+            return JSONResponse(content={"fulfillmentText": "📭 No hay álbumes disponibles en este momento."})
+        
+        # Construir el mensaje con los álbumes disponibles
+        mensaje = "📚 *Álbumes Disponibles:*\n\n"
+        botones = {"inline_keyboard": []}
+        
+        for album in albumes:
+            precio_formateado = "${:,.0f}".format(album["precio"]).replace(',', '.')
+            mensaje += f"🔹 *ID:* {album['id_album']} - {album['nombre']}\n"
+            mensaje += f"💰 Precio: {precio_formateado}\n\n"
+            botones["inline_keyboard"].append([
+                {"text": f"🛒 Comprar Álbum {album['id_album']}", "callback_data": f"C0mpr4r4lbum|{album['id_album']}"}
+            ])
+        
+        return JSONResponse(content={
+            "fulfillmentMessages": [
+                {
+                    "platform": "TELEGRAM",
+                    "payload": {
+                        "telegram": {
+                            "parse_mode": "Markdown",
+                            "text": mensaje,
+                            "reply_markup": botones
+                        }
                     }
                 }
-            }
-        ]
-    })
+            ]
+        })
+    except Exception as e:
+        print(f"❌ Error al procesar la acción actComprarAlbum: {e}")
+        return JSONResponse(content={"fulfillmentText": "❌ Hubo un error al procesar la solicitud."})
