@@ -1120,26 +1120,20 @@ async def callback_bold(data: dict):
 
     return JSONResponse(content={"message": "Callback procesado correctamente."})
 '''
-
 # ✅ Función para manejar la acción de comprar álbum
 def handle_comprar_album():
     print("📚 Acción detectada: Comprar Álbum")
     try:
-        # Obtener álbumes disponibles desde el backend
-        response = requests.get("https://bolas-locas-production.up.railway.app/albumes_disponibles")
-        print(f"🌐 Respuesta del servidor: {response.status_code}")  # 🔍 Depuración
-        if response.status_code != 200:
-            return JSONResponse(content={"fulfillmentText": "❌ No se pudieron cargar los álbumes disponibles."})
-        
-        albumes = response.json()
-        print(f"📚 Álbumes obtenidos: {albumes}")  # 🔍 Depuración
+        # Obtener álbumes disponibles directamente desde la función local
+        albumes = get_albumes_disponibles_local()
+
         if not albumes:
             return JSONResponse(content={"fulfillmentText": "📭 No hay álbumes disponibles en este momento."})
-        
+
         # Construir el mensaje con los álbumes disponibles
         mensaje = "📚 *Álbumes Disponibles:*\n\n"
         botones = {"inline_keyboard": []}
-        
+
         for album in albumes:
             precio_formateado = "${:,.0f}".format(album["precio"]).replace(',', '.')
             mensaje += f"🔹 *ID:* {album['id_album']} - {album['nombre']}\n"
@@ -1147,7 +1141,7 @@ def handle_comprar_album():
             botones["inline_keyboard"].append([
                 {"text": f"🛒 Comprar Álbum {album['id_album']}", "callback_data": f"C0mpr4r4lbum|{album['id_album']}"}
             ])
-        
+
         return JSONResponse(content={
             "fulfillmentMessages": [
                 {
@@ -1165,3 +1159,29 @@ def handle_comprar_album():
     except Exception as e:
         print(f"❌ Error al procesar la acción actComprarAlbum: {e}")
         return JSONResponse(content={"fulfillmentText": "❌ Hubo un error al procesar la solicitud."})
+
+
+# ✅ Función local para obtener álbumes disponibles
+def get_albumes_disponibles_local():
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("SELECT id_album, nombre, descripcion, precio FROM albumes WHERE estado = 'activo'")
+        albumes = cursor.fetchall()
+
+        # Convertir valores Decimal a float
+        albumes = convertir_a_float(albumes)
+
+        cursor.close()
+        conn.close()
+
+        if not albumes:
+            print("⚠️ No se encontraron álbumes disponibles.")
+            return []
+
+        print(f"✅ Álbumes obtenidos: {albumes}")  # 🔍 Ver qué devuelve la consulta
+        return albumes
+
+    except Exception as e:
+        print(f"❌ Error en la función get_albumes_disponibles_local: {e}")
+        return []
