@@ -1002,3 +1002,149 @@ async def simular_compras():
     except Exception as e:
         print(f"❌ Error al simular compras: {e}")
         return JSONResponse(content={"error": str(e)}, status_code=500)
+
+############################################################
+##      📚📚📚 Inicio Seccion de ALBUMES 📚📚📚         ##
+############################################################
+
+@router.get("/albumes_disponibles")
+def get_albumes_disponibles():
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("SELECT id_album, nombre, descripcion, precio FROM albumes WHERE estado = 'activo'")
+        albumes = cursor.fetchall()
+        cursor.close()
+        conn.close()
+        if not albumes:
+            return JSONResponse(content={"message": "No hay álbumes disponibles."}, status_code=404)
+        return JSONResponse(content=albumes)
+    except Exception as e:
+        print(f"❌ Error en el endpoint /albumes_disponibles: {e}")
+        return JSONResponse(content={"error": str(e)}, status_code=500)
+
+
+@router.post("/iniciar_compra_album")
+async def iniciar_compra_album(data: dict):
+    user_id = data.get("user_id")
+    id_album = data.get("id_album")
+
+    if not user_id or not id_album:
+        return JSONResponse(content={"error": "Faltan parámetros obligatorios."}, status_code=400)
+
+    # Verificar si el álbum existe
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute("SELECT * FROM albumes WHERE id_album = %s AND estado = 'activo'", (id_album,))
+    album = cursor.fetchone()
+    if not album:
+        return JSONResponse(content={"error": "El álbum no existe o no está disponible."}, status_code=404)
+
+    # Registrar la compra en estado pendiente
+    try:
+        cursor.execute(
+            "INSERT INTO compras_albumes (user_id, id_album, estado) VALUES (%s, %s, 'pendiente')",
+            (user_id, id_album)
+        )
+        conn.commit()
+        id_compra_album = cursor.lastrowid
+    except Exception as e:
+        conn.rollback()
+        return JSONResponse(content={"error": f"Error al registrar la compra: {str(e)}"}, status_code=500)
+    finally:
+        cursor.close()
+        conn.close()
+
+    # Generar solicitud de pago en Bold
+    bold_payload = {
+        "amount": album["precio"],
+        "currency": "COP",
+        "description": f"Compra de álbum: {album['nombre']}",
+        "callback_url": "https://bolas-locas-production.up.railway.app/callback_bold",
+        "reference": str(id_compra_album)  # Usamos el ID de la compra como referencia
+    }
+
+    try:
+        response = requests.post("https://api.bold.com/payments", json=bold_payload)
+        if response.status_code != 200:
+            return JSONResponse(content={"error": "Error al generar la solicitud de pago."}, status_code=500)
+
+        payment_url = response.json().get("payment_url")
+        return JSONResponse(content={"payment_url": payment_url})
+    except Exception as e:
+        return JSONResponse(content={"error": f"Error al comunicarse con Bold: {str(e)}"}, status_code=500)
+
+    @router.post("/callback_bold")
+async def callback_bold(data: dict):
+    reference = data.get("reference")
+    status = data.get("status")
+
+    if not reference or not status:
+        return JSONResponse(content={"error": "Faltan parámetros obligatorios."}, status_code=400)
+
+    # Actualizar el estado de la compra
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    try:
+        cursor.execute(
+            "UPDATE compras_albumes SET estado = %s, fecha_confirmacion = NOW() WHERE id_compra_album = %s",
+            (status, reference)
+        )
+        conn.commit()
+
+        if status == "completado":
+            # Asignar las láminas del usuario al álbum
+            cursor.execute(
+                "INSERT INTO coleccion_laminas (user_id, id_album, id_lamina, cantidad) "
+                "SELECT %s, %s, id_lamina, COUNT(*) "
+                "FROM laminas_obtenidas "
+                "WHERE user_id = %s AND id_lamina IN (SELECT id_lamina FROM laminas WHERE id_album = %s) "
+                "GROUP BY id_lamina",
+                (user_id, id_album, user_id, id_album)
+            )
+            conn.commit()
+    except Exception as e:
+        conn.rollback()
+        return JSONResponse(content={"error": f"Error al procesar el callback: {str(e)}"}, status_code=500)
+    finally:
+        cursor.close()
+        conn.close()
+
+    return JSONResponse(content={"message": "Callback procesado correctamente."})
+
+
+    if action == "actComprarAlbum":
+    # Obtener álbumes disponibles
+    response = requests.get("https://bolas-locas-production.up.railway.app/albumes_disponibles")
+    if response.status_code != 200:
+        return JSONResponse(content={"fulfillmentText": "❌ No se pudieron cargar los álbumes disponibles."})
+    
+    albumes = response.json()
+    if not albumes:
+        return JSONResponse(content={"fulfillmentText": "📭 No hay álbumes disponibles en este momento."})
+    
+    mensaje = "📚 *Álbumes Disponibles:*\n\n"
+    botones = {"inline_keyboard": []}
+    
+    for album in albumes:
+        precio_formateado = "${:,.0f}".format(album["precio"]).replace(',', '.')
+        mensaje += f"🔹 *ID:* {album['id_album']} - {album['nombre']}\n"
+        mensaje += f"💰 Precio: {precio_formateado}\n\n"
+        botones["inline_keyboard"].append([
+            {"text": f"🛒 Comprar Álbum {album['id_album']}", "callback_data": f"C0mpr4r4lbum|{album['id_album']}"}
+        ])
+    
+    return JSONResponse(content={
+        "fulfillmentMessages": [
+            {
+                "platform": "TELEGRAM",
+                "payload": {
+                    "telegram": {
+                        "parse_mode": "Markdown",
+                        "text": mensaje,
+                        "reply_markup": botones
+                    }
+                }
+            }
+        ]
+    })
