@@ -1019,6 +1019,8 @@ def get_albumes_disponibles():
         cursor = conn.cursor(dictionary=True)
         cursor.execute("SELECT id_album, nombre, descripcion, precio FROM albumes WHERE estado = 'activo'")
         albumes = cursor.fetchall()
+        # Convertir valores Decimal a float
+        albumes = convertir_a_float(albumes)
         cursor.close()
         conn.close()
         if not albumes:
